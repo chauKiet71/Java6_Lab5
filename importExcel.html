@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+</head>
+
+<body ng-app="app" ng-controller="ctrl">
+    <input type="file" onchange="angular.element(this).scope().import(this.files)">
+</body>
+<script>
+    var app = angular.module("app", [])
+    app.controller("ctrl", function ($scope, $http) {
+        $scope.import = function (files) {
+            var reader = new FileReader(); //doc file excel
+            reader.onloadend = async() => { //=> reader.result
+                var workbook = new ExcelJS.Workbook()//tao ra workbook
+                await workbook.xlsx.load(reader.result)// read reader.result vao trong workbook
+                const worksheet = workbook.getWorksheet('dssv')//doc sheet co name 'Sheet1'
+                worksheet.eachRow((row, index) => {
+                    if (index > 1) {//bo qua row 1 start row 2
+                        let student = {
+                            email: row.getCell(1).value,
+                            fullname: row.getCell(2).value,
+                            marks: +row.getCell(3).value,
+                            gender: true && row.getCell(4).value,
+                            country: row.getCell(5).value
+                        }
+                        var url = "http://localhost:8080/rest/student"
+                        $http.post(url, student).then(resp => {
+                            console.log("success", resp.data)
+                        }).catch(error => {
+                            console.log("error", error)
+                        })
+                    }
+                })
+            }
+            reader.readAsArrayBuffer(files[0])
+        }
+    })
+</script>
+
+</html>

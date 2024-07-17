@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+</head>
+<body ng-app="app" ng-controller="ctrl">
+    <h3>RESTful - Quản Lý Tập Tin</h3>
+    <label>
+        Tải lên tập tin:
+        <input type="file" accept="image/*" multiple 
+            onchange="angular.element(this).scope().upload(this.files)">
+    </label>
+    <hr>
+    <label ng-repeat="filename in filenames" title="Nhấp đúp để xóa">
+        <img ng-src="{{url(filename)}}" ng-dblclick="delete(filename)">
+    </label>
+    <div ng-if="message" class="message">{{message}}</div>
+
+    <script>
+        var app = angular.module("app", [])
+        app.controller("ctrl", function($scope, $http) {
+            var url = "http://localhost:8080/rest/files/images"
+            $scope.url = function(filename) {
+                return `${url}/${filename}`
+            }
+            $scope.list = function() {
+                $http.get(url).then(resp => {
+                    $scope.filenames = resp.data
+                }).catch(error => {
+                    console.log("error", error)
+                    $scope.message = "Không thể tải danh sách tập tin."
+                })
+            }
+            $scope.upload = function(files) {
+                var form = new FormData();
+                for(var i = 0 ; i < files.length ; i++) {
+                    form.append("files", files[i])
+                }
+                $http.post(url, form, {
+                    transformRequest: angular.identity,
+                    headers: {'Content-Type': undefined}
+                }).then(resp => {
+                    $scope.filenames.push(...resp.data)
+                    $scope.message = "Tập tin đã được tải lên thành công."
+                }).catch(error => {
+                    console.log("error", error)
+                    $scope.message = "Không thể tải lên tập tin."
+                })
+            }
+            $scope.delete = function(filename) {
+                $http.delete(`${url}/${filename}`).then(resp => {
+                    let i = $scope.filenames.findIndex(name => name == filename)
+                    $scope.filenames.splice(i, 1)
+                    $scope.message = "Tập tin đã được xóa thành công."
+                }).catch(error => {
+                    console.log("error", error)
+                    $scope.message = "Không thể xóa tập tin."
+                })
+            }
+            $scope.list()
+        })
+    </script>
+</body>
+</html>
