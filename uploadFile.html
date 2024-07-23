@@ -15,53 +15,60 @@
     </label>
     <hr>
     <label ng-repeat="filename in filenames" title="Nhấp đúp để xóa">
-        <img ng-src="{{url(filename)}}" ng-dblclick="delete(filename)">
+        <img ng-src="{{url(filename)}}" ng-dblclick="delete(filename)" style="max-width: 200px; max-height: 200px;">
     </label>
     <div ng-if="message" class="message">{{message}}</div>
 
     <script>
-        var app = angular.module("app", [])
+        var app = angular.module("app", []);
         app.controller("ctrl", function($scope, $http) {
-            var url = "http://localhost:8080/rest/files/images"
+            var url = "http://localhost:8080/rest/files/images";
+            
             $scope.url = function(filename) {
-                return `${url}/${filename}`
-            }
+                return `${url}/${filename}`;
+            };
+            
             $scope.list = function() {
                 $http.get(url).then(resp => {
-                    $scope.filenames = resp.data
+                    $scope.filenames = resp.data;
                 }).catch(error => {
-                    console.log("error", error)
-                    $scope.message = "Không thể tải danh sách tập tin."
-                })
-            }
+                    console.error("Error loading file list", error);
+                    $scope.message = "Không thể tải danh sách tập tin.";
+                });
+            };
+            
             $scope.upload = function(files) {
                 var form = new FormData();
-                for(var i = 0 ; i < files.length ; i++) {
-                    form.append("files", files[i])
+                for (var i = 0; i < files.length; i++) {
+                    form.append("files", files[i]);
                 }
                 $http.post(url, form, {
                     transformRequest: angular.identity,
                     headers: {'Content-Type': undefined}
                 }).then(resp => {
-                    $scope.filenames.push(...resp.data)
-                    $scope.message = "Tập tin đã được tải lên thành công."
+                    $scope.filenames.push(...resp.data.map(file => file.filename));
+                    $scope.message = "Tập tin đã được tải lên thành công.";
                 }).catch(error => {
-                    console.log("error", error)
-                    $scope.message = "Không thể tải lên tập tin."
-                })
-            }
+                    console.error("Error uploading files", error);
+                    $scope.message = "Không thể tải lên tập tin.";
+                });
+            };
+            
             $scope.delete = function(filename) {
-                $http.delete(`${url}/${filename}`).then(resp => {
-                    let i = $scope.filenames.findIndex(name => name == filename)
-                    $scope.filenames.splice(i, 1)
-                    $scope.message = "Tập tin đã được xóa thành công."
+                $http.delete(`${url}/${filename}`).then(() => {
+                    let index = $scope.filenames.findIndex(name => name === filename);
+                    if (index !== -1) {
+                        $scope.filenames.splice(index, 1);
+                        $scope.message = "Tập tin đã được xóa thành công.";
+                    }
                 }).catch(error => {
-                    console.log("error", error)
-                    $scope.message = "Không thể xóa tập tin."
-                })
-            }
-            $scope.list()
-        })
+                    console.error("Error deleting file", error);
+                    $scope.message = "Không thể xóa tập tin.";
+                });
+            };
+            
+            $scope.list();
+        });
     </script>
 </body>
 </html>
